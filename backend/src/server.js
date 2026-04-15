@@ -6,6 +6,12 @@ const mongoose = require('mongoose');
 require('dotenv').config();
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const compression = require('compression');
+
+// Structured Google Cloud Logging
+const log = (severity, message, payload = {}) => {
+  console.log(JSON.stringify({ severity, message, ...payload, timestamp: new Date().toISOString() }));
+};
 
 const authRoutes = require('./routes/auth');
 const venueRoutes = require('./routes/venues');
@@ -32,16 +38,20 @@ const io = new Server(server, {
 
 // Middleware
 app.use(helmet()); // Security headers
+app.use(compression()); // Compress responses
+const allowedOrigin = process.env.CORS_ORIGIN || 'http://localhost:3000';
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  origin: allowedOrigin,
   credentials: true
 }));
 
-// Rate limiting
+// Rate limiting - Pro-tier limits for real-time dashboard
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP, please try again after 15 minutes'
+  max: 1000, // Increased to 1000 to support high-frequency analytics polling
+  message: { error: 'Too many requests. Please wait 15 minutes or contact support.' },
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 app.use('/api/', limiter);
 
@@ -63,12 +73,14 @@ app.use('/api/sensors', sensorRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({
+  const healthInfo = {
     status: 'healthy',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     version: '1.0.0'
-  });
+  };
+  log('INFO', 'Health check performed', healthInfo);
+  res.json(healthInfo);
 });
 
 // Socket.IO handlers
@@ -97,16 +109,10 @@ mongoose.connect(MONGODB_URI)
 const PORT = process.env.PORT || 5000;
 
 server.listen(PORT, () => {
-  console.log(`
-  ╔══════════════════════════════════════════════╗
-  ║   🏟️  SVES Backend Server                    ║
-  ║   Smart Venue Experience System              ║
-  ║                                              ║
-  ║   🌐 HTTP:   http://localhost:${PORT}           ║
-  ║   🔌 WS:     ws://localhost:${PORT}             ║
-  ║   📊 Health: http://localhost:${PORT}/api/health ║
-  ╚══════════════════════════════════════════════╝
-  `);
+  log('INFO', `SVES Backend listening on port ${PORT}`, { 
+    port: PORT, 
+    env: process.env.NODE_ENV || 'development' 
+  });
 });
 
 module.exports = { app, server, io };

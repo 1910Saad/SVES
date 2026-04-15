@@ -28,8 +28,8 @@ SVES is a real-time venue management platform built for the **PromptWars challen
 - **Flow Analysis**: Automated zone-density scoring for bottleneck identification.
 
 ## 🧪 Testing
-- **AI Service**: Unit tests in `ai-service/tests` using `pytest`.
-- **Backend**: Integration tests in `backend/tests` using `jest` and `supertest`.
+- **AI Service**: Unit tests in `ai-service/tests` using `pytest`. Includes **code coverage** via `pytest-cov`.
+- **Backend**: Integration tests in `backend/tests` using `jest` and `supertest`. Includes **automated coverage reporting**.
 
 ## 🐳 Deployment & Cloud
 The project is fully live on **Google Cloud Run**:

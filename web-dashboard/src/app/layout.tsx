@@ -5,6 +5,23 @@ export const metadata: Metadata = {
   title: "SVES — Smart Venue Experience System",
   description: "Real-time venue management platform for large-scale sporting events. AI-powered crowd management, intelligent navigation, and seamless coordination.",
   keywords: ["venue management", "crowd management", "smart stadium", "IoT", "real-time analytics"],
+  authors: [{ name: "Saad Khan" }],
+  openGraph: {
+    title: "SVES — Smart Venue Experience System",
+    description: "Proactive, AI-driven command center for modern venue operations.",
+    url: "https://sves-dashboard-796928583635.us-central1.run.app/",
+    siteName: "SVES",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  viewport: "width=device-width, initial-scale=1, maximum-scale=1",
 };
 
 export default function RootLayout({

@@ -1,5 +1,7 @@
 const express = require('express');
 const router = express.Router();
+const NodeCache = require('node-cache');
+const myCache = new NodeCache({ stdTTL: 5, checkperiod: 2 }); // 5 second cache
 
 // Analytics data store (updated by simulation)
 let analyticsData = {
@@ -25,6 +27,14 @@ let analyticsData = {
 
 // Get dashboard analytics
 router.get('/dashboard', (req, res) => {
+  const cacheKey = 'dashboard_stats';
+  const cachedData = myCache.get(cacheKey);
+  
+  if (cachedData) {
+    return res.json({ ...cachedData, _cached: true });
+  }
+  
+  myCache.set(cacheKey, analyticsData);
   res.json(analyticsData);
 });
 

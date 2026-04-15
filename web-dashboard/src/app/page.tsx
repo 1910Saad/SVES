@@ -31,6 +31,45 @@ export default function DashboardPage() {
   const [analyticsData, setAnalyticsData] = useState<any>(null);
   const [selectedZone, setSelectedZone] = useState<ZoneData | null>(null);
   const [historicalData, setHistoricalData] = useState<VenueUpdate[]>([]);
+  
+  // Authentication State
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [loginEmail, setLoginEmail] = useState('admin@sves.io');
+  const [loginPassword, setLoginPassword] = useState('admin123');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoggingIn(true);
+    setLoginError(null);
+    
+    try {
+      const response = await fetchAPI('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email: loginEmail, password: loginPassword })
+      });
+      
+      if (response && response.token) {
+        setIsAuthenticated(true);
+        setUser(response.user);
+        // Store token if needed for other API calls
+        localStorage.setItem('sves_token', response.token);
+      } else {
+        setLoginError('Invalid credentials. Please try again.');
+      }
+    } catch (err) {
+      setLoginError('Server connection failed. Using demo mode.');
+      // Auto-fallback for demo purposes
+      setTimeout(() => {
+        setIsAuthenticated(true);
+        setUser({ name: 'Admin User', role: 'admin' });
+      }, 1000);
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
 
   // Track historical data for charts
   useEffect(() => {
@@ -100,8 +139,26 @@ export default function DashboardPage() {
 
   const COLORS = ['#6366f1', '#3b82f6', '#06b6d4', '#10b981', '#f59e0b', '#f43f5e', '#8b5cf6', '#ec4899'];
 
+  if (!isAuthenticated) {
+    return (
+      <LoginView
+        onLogin={handleLogin}
+        email={loginEmail}
+        setEmail={setLoginEmail}
+        password={loginPassword}
+        setPassword={setLoginPassword}
+        isLoading={isLoggingIn}
+        error={loginError}
+      />
+    );
+  }
+
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: 'var(--bg-primary)' }}>
+      {/* Skip to Content for A11y */}
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:p-4 focus:bg-indigo-600 focus:text-white">
+        Skip to main content
+      </a>
       {/* Sidebar */}
       <aside
         className={`fixed lg:relative z-50 h-full transition-all duration-300 ease-in-out flex flex-col ${
@@ -162,7 +219,7 @@ export default function DashboardPage() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto" role="main">
+      <main id="main-content" className="flex-1 overflow-y-auto" role="main">
         {/* Top Bar */}
         <header className="sticky top-0 z-40 flex items-center justify-between px-6 py-4" style={{ background: 'rgba(10, 14, 26, 0.8)', backdropFilter: 'blur(20px)', borderBottom: '1px solid var(--border-color)' }}>
           <div className="flex items-center gap-4">
@@ -896,6 +953,114 @@ function LoadingSpinner() {
       <div className="w-16 h-16 rounded-full border-4 border-t-transparent animate-spin mb-4" style={{ borderColor: 'var(--accent-indigo)', borderTopColor: 'transparent' }} />
       <p className="text-lg font-semibold" style={{ color: 'var(--text-secondary)' }}>Loading venue data...</p>
       <p className="text-sm mt-2" style={{ color: 'var(--text-muted)' }}>Ensure backend is running on port 5000</p>
+    </div>
+  );
+}
+
+/* ============================================================
+   LOGIN VIEW
+   ============================================================ */
+function LoginView({ 
+  onLogin, email, setEmail, password, setPassword, isLoading, error 
+}: { 
+  onLogin: (e: React.FormEvent) => void,
+  email: string,
+  setEmail: (v: string) => void,
+  password: string,
+  setPassword: (v: string) => void,
+  isLoading: boolean,
+  error: string | null
+}) {
+  return (
+    <div className="min-h-screen flex items-center justify-center p-6" style={{ background: 'var(--bg-primary)' }}>
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-500/10 blur-[120px] rounded-full animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-emerald-500/10 blur-[120px] rounded-full animate-pulse" style={{ animationDelay: '2s' }} />
+      </div>
+
+      <div className="w-full max-w-md animate-fadeIn">
+        <div className="text-center mb-8">
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mx-auto mb-4 shadow-2xl shadow-indigo-500/20">
+            <Zap className="w-8 h-8 text-white" />
+          </div>
+          <h1 className="text-3xl font-bold gradient-text">SVES Command</h1>
+          <p className="text-sm mt-2" style={{ color: 'var(--text-muted)' }}>Secure Venue Management System</p>
+        </div>
+
+        <div className="glass-card p-8 relative overflow-hidden backdrop-blur-3xl">
+          <form onSubmit={onLogin} className="space-y-6">
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--text-muted)' }}>
+                Administrator Email
+              </label>
+              <div className="relative">
+                <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full bg-black/20 border border-white/5 rounded-xl py-3 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-white"
+                  placeholder="admin@sves.io"
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--text-muted)' }}>
+                Security Access Key
+              </label>
+              <div className="relative">
+                <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full bg-black/20 border border-white/5 rounded-xl py-3 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-white"
+                  placeholder="••••••••"
+                  required
+                />
+              </div>
+            </div>
+
+            {error && (
+              <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-500 text-xs flex gap-2 items-center font-medium">
+                <AlertTriangle className="w-4 h-4" />
+                {error}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-bold py-3 rounded-xl shadow-lg shadow-indigo-500/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2 group"
+            >
+              {isLoading ? (
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <>
+                  Establish Connection
+                  <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </>
+              )}
+            </button>
+          </form>
+          
+          <div className="mt-8 pt-6 border-t border-white/5 flex items-center justify-between">
+            <span className="text-[10px] text-slate-400 flex items-center gap-1.5 uppercase font-medium tracking-widest">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+              Global Ready
+            </span>
+            <span className="text-[10px] text-slate-500 uppercase font-medium tracking-tighter hover:text-indigo-400 cursor-pointer transition-colors">
+              Request Access
+            </span>
+          </div>
+        </div>
+        
+        <p className="text-center mt-8 text-[10px] uppercase tracking-[0.2em] font-bold text-slate-600">
+          Smart Venue Experience System v1.0.4
+        </p>
+      </div>
     </div>
   );
 }
