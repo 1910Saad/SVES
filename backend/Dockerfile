@@ -3,5 +3,6 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci --production
 COPY . .
-EXPOSE 5000
+# Cloud Run expects the app to listen on the port defined by the PORT environment variable.
+ENV PORT=5000
 CMD ["node", "src/server.js"]

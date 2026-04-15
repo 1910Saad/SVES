@@ -117,6 +117,14 @@ class IoTSimulator {
 const simulator = new IoTSimulator();
 simulator.start(5000);
 
+// Simple health check for Cloud Run
+const http = require('http');
+const PORT = process.env.PORT || 8080;
+http.createServer((req, res) => {
+  res.writeHead(200);
+  res.end('Simulator Running');
+}).listen(PORT);
+
 // Graceful shutdown
 process.on('SIGINT', () => {
   simulator.stop();

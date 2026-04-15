@@ -1,0 +1,10 @@
+{
+  "name": "sves-iot-simulator",
+  "version": "1.0.0",
+  "description": "IoT Device Simulator for SVES",
+  "main": "simulator.js",
+  "scripts": {
+    "start": "node simulator.js"
+  },
+  "dependencies": {}
+}
