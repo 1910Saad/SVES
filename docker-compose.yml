@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  # MongoDB
+  mongodb:
+    image: mongo:7
+    container_name: sves-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: sves
+    networks:
+      - sves-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: sves-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - sves-network
+
+  # Node.js Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: sves-backend
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - MONGODB_URI=mongodb://mongodb:27017/sves
+      - REDIS_URL=redis://redis:6379
+      - AI_SERVICE_URL=http://ai-service:8000
+      - CORS_ORIGIN=http://localhost:3000
+      - JWT_SECRET=sves_super_secret_key_2024_venue_experience
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - sves-network
+
+  # Python AI Service
+  ai-service:
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    container_name: sves-ai-service
+    ports:
+      - "8000:8000"
+    networks:
+      - sves-network
+
+  # Next.js Web Dashboard
+  web-dashboard:
+    build:
+      context: ./web-dashboard
+      dockerfile: Dockerfile
+    container_name: sves-web-dashboard
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_BACKEND_URL=http://localhost:5000
+    depends_on:
+      - backend
+    networks:
+      - sves-network
+
+volumes:
+  mongodb_data:
+
+networks:
+  sves-network:
+    driver: bridge
