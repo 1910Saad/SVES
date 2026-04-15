@@ -21,6 +21,7 @@ const queueRoutes = require('./routes/queues');
 const alertRoutes = require('./routes/alerts');
 const analyticsRoutes = require('./routes/analytics');
 const sensorRoutes = require('./routes/sensors');
+const aiRoutes = require('./routes/ai');
 const { setupSocketHandlers } = require('./sockets');
 const { startSimulation } = require('./simulation/engine');
 
@@ -70,6 +71,7 @@ app.use('/api/queues', queueRoutes);
 app.use('/api/alerts', alertRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/sensors', sensorRoutes);
+app.use('/api/ai', aiRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

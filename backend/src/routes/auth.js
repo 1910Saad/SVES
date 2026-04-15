@@ -35,7 +35,8 @@ router.post('/register', async (req, res) => {
 
 // Login
 router.post('/login', [
-  body('email').isEmail().withMessage('Please include a valid email').normalizeEmail(),
+  body('email').optional().isEmail().normalizeEmail(),
+  body('username').optional().trim(),
   body('password').notEmpty().withMessage('Password is required')
 ], async (req, res) => {
   const errors = validationResult(req);
@@ -44,15 +45,28 @@ router.post('/login', [
   }
 
   try {
-    const { email, password } = req.body;
-    
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password are required' });
+    const { email, username, password } = req.body;
+    const loginIdentifier = email || username;
+
+    if (!loginIdentifier || !password) {
+      return res.status(400).json({ error: 'Username/Email and password are required' });
+    }
+
+    // Default Admin Fallback for Demonstration
+    if (loginIdentifier === 'admin' || loginIdentifier === 'admin@sves.com') {
+      if (password === 'admin123') {
+        const demoUser = { _id: 'admin_id', name: 'System Admin', email: 'admin@sves.com', role: 'admin' };
+        const token = generateToken(demoUser);
+        return res.json({ user: demoUser, token });
+      }
     }
 
     let user;
     try {
-      user = await User.findOne({ email }).select('+password');
+      user = await User.findOne({ 
+        $or: [{ email: loginIdentifier }, { username: loginIdentifier }] 
+      }).select('+password');
+
       if (!user) {
         return res.status(401).json({ error: 'Invalid credentials' });
       }

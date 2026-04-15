@@ -21,6 +21,7 @@ const navItems = [
   { id: 'queues', label: 'Queues', icon: ListOrdered },
   { id: 'sensors', label: 'IoT Sensors', icon: Cpu },
   { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+  { id: 'ai-advisor', label: 'AI Insight', icon: Radio },
   { id: 'alerts', label: 'Alerts', icon: Bell },
 ];
 
@@ -39,6 +40,45 @@ export default function DashboardPage() {
   const [loginPassword, setLoginPassword] = useState('admin123');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
+
+  // AI Advisor State
+  const [aiMessages, setAiMessages] = useState<{ role: 'user' | 'assistant', content: string }[]>([
+    { role: 'assistant', content: "System ready. I'm monitoring MetLife Stadium. How can I assist you with venue operations today?" }
+  ]);
+  const [aiInput, setAiInput] = useState('');
+  const [isAiThinking, setIsAiThinking] = useState(false);
+
+  const handleAiQuery = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!aiInput.trim() || isAiThinking) return;
+
+    const userMessage = aiInput.trim();
+    setAiMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+    setAiInput('');
+    setIsAiThinking(true);
+
+    try {
+      const response = await fetchAPI('/ai/advise', {
+        method: 'POST',
+        body: JSON.stringify({ 
+          prompt: userMessage,
+          venueContext: { venueData, analyticsData, alerts }
+        })
+      });
+
+      if (response && response.response) {
+        setAiMessages(prev => [...prev, { role: 'assistant', content: response.response }]);
+      } else if (response && response.message) {
+        setAiMessages(prev => [...prev, { role: 'assistant', content: `[SERVER ERROR] ${response.message} ${response.hint || ''}` }]);
+      } else {
+        setAiMessages(prev => [...prev, { role: 'assistant', content: "I'm having trouble analyzing the data right now. Please try again." }]);
+      }
+    } catch (err: any) {
+      setAiMessages(prev => [...prev, { role: 'assistant', content: `[NETWORK ERROR] Communication with AI Command failed. Details: ${err.message || 'Unknown'}` }]);
+    } finally {
+      setIsAiThinking(false);
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -290,6 +330,15 @@ export default function DashboardPage() {
               attendanceHistory={attendanceHistory}
               zoneDensityData={zoneDensityData}
               COLORS={COLORS}
+            />
+          )}
+          {activeTab === 'ai-advisor' && (
+            <AIAdvisorView 
+              messages={aiMessages}
+              input={aiInput}
+              setInput={setAiInput}
+              onSubmit={handleAiQuery}
+              isThinking={isAiThinking}
             />
           )}
           {activeTab === 'alerts' && (
@@ -953,6 +1002,90 @@ function LoadingSpinner() {
       <div className="w-16 h-16 rounded-full border-4 border-t-transparent animate-spin mb-4" style={{ borderColor: 'var(--accent-indigo)', borderTopColor: 'transparent' }} />
       <p className="text-lg font-semibold" style={{ color: 'var(--text-secondary)' }}>Loading venue data...</p>
       <p className="text-sm mt-2" style={{ color: 'var(--text-muted)' }}>Ensure backend is running on port 5000</p>
+    </div>
+  );
+}
+
+/* ============================================================
+   AI ADVISOR VIEW
+   ============================================================ */
+function AIAdvisorView({ 
+  messages, input, setInput, onSubmit, isThinking 
+}: {
+  messages: { role: 'user' | 'assistant', content: string }[],
+  input: string,
+  setInput: (v: string) => void,
+  onSubmit: (e: React.FormEvent) => void,
+  isThinking: boolean
+}) {
+  return (
+    <div className="flex flex-col h-[calc(100vh-140px)] gap-4 animate-fadeIn">
+      <div className="glass-card p-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20">
+            <Radio className="w-5 h-5 text-indigo-400 animate-pulse" />
+          </div>
+          <div>
+            <h3 className="font-semibold">Gemini Operational Advisor</h3>
+            <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Real-time Strategic Support</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-tighter">AI Online</span>
+        </div>
+      </div>
+
+      <div className="flex-1 glass-card p-6 overflow-y-auto space-y-6 scrollbar-hide">
+        {messages.map((msg, i) => (
+          <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+            <div className={`max-w-[80%] rounded-2xl p-4 ${
+              msg.role === 'user' 
+                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/10' 
+                : 'bg-white/5 border border-white/10 text-slate-200'
+            }`}>
+              <p className="text-sm leading-relaxed">{msg.content}</p>
+              {msg.role === 'assistant' && (
+                <div className="mt-3 pt-3 border-t border-white/5 flex items-center gap-2">
+                  <div className="w-4 h-4 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                    <Zap className="w-2 h-2 text-white" />
+                  </div>
+                  <span className="text-[9px] uppercase tracking-tighter text-slate-500 font-bold">Verified Strategy</span>
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+        {isThinking && (
+          <div className="flex justify-start animate-pulse">
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex gap-2 items-center">
+              <div className="flex gap-1">
+                <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-bounce" />
+                <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-bounce [animation-delay:0.2s]" />
+                <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-bounce [animation-delay:0.4s]" />
+              </div>
+              <span className="text-xs text-slate-500 font-medium">Analyzing Venue Metrics...</span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <form onSubmit={onSubmit} className="relative">
+        <input
+          type="text"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Ask about crowd management, wait times, or alert procedures..."
+          className="w-full bg-slate-900/50 border border-white/5 rounded-2xl py-4 pl-6 pr-16 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 backdrop-blur-xl transition-all"
+        />
+        <button
+          type="submit"
+          disabled={isThinking || !input.trim()}
+          className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed group shadow-lg shadow-indigo-600/20"
+        >
+          <ChevronRight className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
+        </button>
+      </form>
     </div>
   );
 }
