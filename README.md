@@ -208,11 +208,26 @@ SVES/
 └── README.md
 ```
 
-## 🔐 Security
+## 🛡️ Security
+- **Helmet.js**: Implemented for setting various security-related HTTP headers.
+- **Rate Limiting**: Configured `express-rate-limit` to prevent brute-force attacks on the API.
+- **CORS**: Strict origin validation for production dashboard URL.
+- **JWT**: Secure token-based authentication for sensitive routes.
 
+## 🧪 Testing
+- **AI Service**: Comprehensive Python unit tests using `pytest` for ML logic (M/M/c, trajectory, anomaly).
+- **Backend**: Integration tests using `jest` and `supertest` for API health and security headers.
+- **Validation**: Automated checks for prediction accuracy and error handling.
+
+## ♿ Accessibility
+- **ARIA Labels**: Full ARIA support for sidebar navigation, modal dialogs, and interactive buttons.
+- **Semantic HTML**: Proper use of `<main>`, `<nav>`, `<header>`, and `<aside>` landmarks.
+- **Contrast**: High-contrast dark mode palette (WCAG compliant) for better visibility.
+- **Responsiveness**: Fully adaptive layouts for mobile, tablet, and desktop viewports.
+
+## 🔐 Authentication
 - **Authentication**: JWT tokens with 7-day expiry
 - **Password Hashing**: bcrypt with 12 salt rounds
-- **CORS**: Configurable origin whitelist
 - **Role-Based Access**: Admin, Operator, Attendee roles
 - **API Protection**: Auth middleware on sensitive routes
 

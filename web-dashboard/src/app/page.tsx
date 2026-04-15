@@ -108,6 +108,8 @@ export default function DashboardPage() {
           sidebarOpen ? 'w-64' : 'w-0 lg:w-20'
         }`}
         style={{ background: 'var(--bg-secondary)', borderRight: '1px solid var(--border-color)' }}
+        role="navigation"
+        aria-label="Sidebar Navigation"
       >
         {/* Logo */}
         <div className="flex items-center gap-3 p-5 border-b" style={{ borderColor: 'var(--border-color)' }}>
@@ -129,6 +131,8 @@ export default function DashboardPage() {
               key={item.id}
               onClick={() => setActiveTab(item.id)}
               className={`sidebar-link w-full text-left ${activeTab === item.id ? 'active' : ''}`}
+              aria-label={`Go to ${item.label}`}
+              aria-current={activeTab === item.id ? 'page' : undefined}
             >
               <item.icon className="w-5 h-5 flex-shrink-0" />
               {sidebarOpen && <span>{item.label}</span>}
@@ -158,11 +162,15 @@ export default function DashboardPage() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto" role="main">
         {/* Top Bar */}
         <header className="sticky top-0 z-40 flex items-center justify-between px-6 py-4" style={{ background: 'rgba(10, 14, 26, 0.8)', backdropFilter: 'blur(20px)', borderBottom: '1px solid var(--border-color)' }}>
           <div className="flex items-center gap-4">
-            <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 rounded-lg hover:bg-white/5">
+            <button 
+              onClick={() => setSidebarOpen(!sidebarOpen)} 
+              className="p-2 rounded-lg hover:bg-white/5"
+              aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"}
+            >
               {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
             <div>
